@@ -1,0 +1,22 @@
+create or replace function part_restrict()
+returns trigger as $$
+declare 
+	supplier_id integer;
+	part_count smallint;
+begin 
+	for supplier_id in select sid from suppliers
+		loop
+			part_count := count(pid) from catalog group by sid having sid = supplier_id;
+
+			if part_count < 1 then
+				raise exception 'too many parts begin supplied by supplier';
+			end if;
+		end loop;
+
+	return new;
+end;
+$$ language 'plpgsql';
+
+create trigger part_restrict
+after insert or update on  catalog
+for each row execute procedure part_restrict();
